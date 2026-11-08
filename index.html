@@ -93,6 +93,7 @@
   </label>
 </div>
 
+<audio id="bite-sound" src="https://img.baat9.com/EVENT/11_11/yam.wav" preload="auto"></audio>
 <audio id="bgm" src="https://img.baat9.com/EVENT/11_11/cute.mp3" loop preload="auto"></audio>
 <footer style="margin-top:24px;text-align:center;font-size:.8rem;">BGM Restaurant - <a href="https://youtube.com/shorts/Zy-_aq5sIDM" target="_blank" rel="noopener noreferrer">https://youtube.com/shorts/Zy-_aq5sIDM</a></footer>
 </main>
@@ -295,6 +296,9 @@ function move(now) {
   animation = requestAnimationFrame(move);
 }
 function stop() {
+  const biteSound = get('bite-sound');
+  biteSound.currentTime = 0;
+  biteSound.play().catch(() => {});
   cancelAnimationFrame(animation);
   const target = targets[round];
   let result = 'miss';
