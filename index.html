@@ -24,7 +24,7 @@
   72%{opacity:1}
   100%{opacity:0;transform:translate(calc(var(--x)*1.35),160px) rotate(calc(var(--spin)*2))}
 }
-#scene[data-ending="hidden"] :is(#art,#sample):not([hidden]){animation:heartbeat .95s ease-in-out both}
+#scene[data-ending="hidden"] :is(#art,#sample):not([hidden]){animation:heartbeat 1.8s ease-in-out both}
 @keyframes heartbeat{
   0%,38%,100%{transform:scale(1)}
   17%{transform:scale(1.075)}
@@ -93,6 +93,7 @@
   </label>
 </div>
 
+<p id="bgm-status" role="status" hidden style="text-align:right;font-size:.8rem;"></p>
 <audio id="bite-sound" src="https://img.baat9.com/EVENT/11_11/yam.wav" preload="auto"></audio>
 <audio id="bgm" src="https://img.baat9.com/EVENT/11_11/cute.mp3" loop preload="auto"></audio>
 <footer style="margin-top:24px;text-align:center;font-size:.8rem;">BGM Restaurant - <a href="https://youtube.com/shorts/Zy-_aq5sIDM" target="_blank" rel="noopener noreferrer">https://youtube.com/shorts/Zy-_aq5sIDM</a></footer>
@@ -297,6 +298,7 @@ function move(now) {
 }
 function stop() {
   const biteSound = get('bite-sound');
+  biteSound.volume = .3;
   biteSound.currentTime = 0;
   biteSound.play().catch(() => {});
   cancelAnimationFrame(animation);
@@ -389,18 +391,26 @@ bgmVolume.addEventListener('input', () => {
 });
 
 const firstInteraction = new AbortController();
+const bgmStatus = get('bgm-status');
 
 function updateBgmButton() {
   bgmToggle.textContent = bgm.paused ? '▶ 재생' : '■ 정지';
 }
 
 function startBgm() {
-  return bgm.play().catch(() => {
-    bgmToggle.textContent = '▶ 재생';
+  return bgm.play().catch(error => {
+    if (error.name === 'AbortError' || !bgm.paused) return;
+    updateBgmButton();
+    bgmStatus.textContent = error.name === 'NotAllowedError'
+      ? '화면을 한 번 누르면 브금이 시작돼요.'
+      : '브금을 불러오지 못했어요. 재생 버튼으로 다시 시도해 주세요.';
+    bgmStatus.hidden = false;
   });
 }
 
-bgm.addEventListener('play', () => {
+bgm.addEventListener('play', updateBgmButton);
+bgm.addEventListener('playing', () => {
+  bgmStatus.hidden = true;
   firstInteraction.abort();
   updateBgmButton();
 });
@@ -418,6 +428,7 @@ bgmToggle.addEventListener('click', () => {
   if (bgm.paused) startBgm();
   else {
     firstInteraction.abort();
+    bgmStatus.hidden = true;
     bgm.pause();
     bgm.currentTime = 0;
     updateBgmButton();
