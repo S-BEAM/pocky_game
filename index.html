@@ -83,6 +83,18 @@
 <p id="message" role="status"></p>
 <button id="action" type="button"></button>
 </section>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px;">
+  <button id="bgm-toggle" type="button" style="width:auto;">♪ 브금 켜기</button>
+
+  <label style="display:flex;align-items:center;gap:8px;margin:0;">
+    볼륨
+    <input id="bgm-volume" type="range" min="0" max="100" value="30"
+           style="width:110px;">
+  </label>
+</div>
+
+<audio id="bgm" src="https://img.baat9.com/EVENT/11_11/cute.mp3" loop preload="auto"></audio>
+<footer style="margin-top:24px;text-align:center;font-size:.8rem;">BGM Restaurant - <a href="https://youtube.com/shorts/Zy-_aq5sIDM" target="_blank" rel="noopener noreferrer">https://youtube.com/shorts/Zy-_aq5sIDM</a></footer>
 </main>
 <script>
 // 각 캐릭터의 두 번째 칸에 게임 중, 성공, 히든 이미지 주소를 입력하세요.
@@ -358,5 +370,50 @@ characterSelect.addEventListener('change', () => {
   prepare();
 });
 prepare();
+const bgm = document.getElementById('bgm');
+const bgmToggle = document.getElementById('bgm-toggle');
+const bgmVolume = document.getElementById('bgm-volume');
+
+bgm.volume = Number(bgmVolume.value) / 100;
+
+bgmVolume.addEventListener('input', () => {
+  bgm.volume = Number(bgmVolume.value) / 100;
+});
+
+const firstInteraction = new AbortController();
+
+function updateBgmButton() {
+  bgmToggle.textContent = bgm.paused ? '♪ 브금 켜기' : '♪ 브금 끄기';
+}
+
+function startBgm() {
+  return bgm.play().catch(() => {
+    bgmToggle.textContent = '♪ 브금 켜기';
+  });
+}
+
+bgm.addEventListener('playing', () => {
+  firstInteraction.abort();
+  updateBgmButton();
+});
+bgm.addEventListener('pause', updateBgmButton);
+
+function tryBgmOnInteraction(event) {
+  if (event.target === bgmToggle || bgmToggle.contains(event.target)) return;
+  if (bgm.paused) startBgm();
+}
+
+document.addEventListener('click', tryBgmOnInteraction, { signal: firstInteraction.signal });
+document.addEventListener('keydown', tryBgmOnInteraction, { signal: firstInteraction.signal });
+
+bgmToggle.addEventListener('click', () => {
+  if (bgm.paused) startBgm();
+  else {
+    firstInteraction.abort();
+    bgm.pause();
+  }
+});
+
+startBgm();
 </script>
 </html>
