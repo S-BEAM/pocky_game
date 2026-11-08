@@ -48,7 +48,7 @@
 }
 @keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-#dialogueBubble{position:absolute;z-index:3;top:8%;left:50%;transform:translateX(-50%);width:max-content;max-width:86%;padding:.55em .9em;border:1px solid #e1b7ae;border-radius:15px;background:#fffaf3;color:#3e2427;box-shadow:0 4px 12px #3e242733;font-size:clamp(12px,3vw,16px);font-weight:700;overflow-wrap:anywhere}
+#dialogueBubble{position:relative;margin:0 auto 14px;width:max-content;max-width:86%;padding:.55em .9em;border:1px solid #e1b7ae;border-radius:15px;background:#fffaf3;color:#3e2427;box-shadow:0 4px 12px #3e242733;font-size:clamp(12px,3vw,16px);font-weight:700;overflow-wrap:anywhere}
 #dialogueBubble::after{content:"";position:absolute;top:100%;left:50%;width:10px;height:10px;background:inherit;border-right:1px solid #e1b7ae;border-bottom:1px solid #e1b7ae;transform:translate(-50%,-5px) rotate(45deg)}
 #kissStamp{display:none;position:absolute;inset:0;z-index:2;place-items:center;pointer-events:none;font-size:clamp(64px,20vw,142px);line-height:1}
 #scene[data-ending="hidden"] #kissStamp{display:grid}
@@ -69,6 +69,7 @@
 <h1>빼빼로 게임</h1>
 <p>움직이는 바늘이 분홍 구간에 들어오는 순간 멈춰!</p>
 <label id="characterPicker">캐릭터 <select id="character"></select></label>
+<div id="dialogueBubble" role="status" hidden></div>
 <figure id="scene">
 <svg id="sample" hidden viewBox="0 0 640 360" aria-hidden="true">
 <circle cx="320" cy="180" r="123" fill="#fff5e8" opacity=".54"/>
@@ -89,7 +90,6 @@
 </div>
 <div id="confetti" aria-hidden="true"></div>
 <div id="kissStamp" aria-hidden="true"><span>💋</span></div>
-<div id="dialogueBubble" role="status" hidden></div>
 <figcaption id="caption" hidden></figcaption>
 </figure>
 <section class="panel" aria-label="게임 조작">
