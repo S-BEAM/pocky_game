@@ -83,8 +83,8 @@
 <p id="message" role="status"></p>
 <button id="action" type="button"></button>
 </section>
-<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px;">
-  <button id="bgm-toggle" type="button" style="width:auto;">♪ 브금 켜기</button>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px;justify-content:flex-end;">
+  <button id="bgm-toggle" type="button" style="width:auto;">▶ 재생</button>
 
   <label style="display:flex;align-items:center;gap:8px;margin:0;">
     볼륨
@@ -216,9 +216,7 @@ function showScene(next, zoom = 1) {
   }[next];
   art.alt = scenes[next];
   art.hidden = true;
-  sample.hidden = true;
-  sample.style.display = '';
-  sample.hidden = false;
+  sample.hidden = Boolean(src);
   art.style.transform = sample.style.transform = 'scale(' + zoom + ')';
   if (src) art.src = src;
   else art.removeAttribute('src');
@@ -383,16 +381,16 @@ bgmVolume.addEventListener('input', () => {
 const firstInteraction = new AbortController();
 
 function updateBgmButton() {
-  bgmToggle.textContent = bgm.paused ? '♪ 브금 켜기' : '♪ 브금 끄기';
+  bgmToggle.textContent = bgm.paused ? '▶ 재생' : '■ 정지';
 }
 
 function startBgm() {
   return bgm.play().catch(() => {
-    bgmToggle.textContent = '♪ 브금 켜기';
+    bgmToggle.textContent = '▶ 재생';
   });
 }
 
-bgm.addEventListener('playing', () => {
+bgm.addEventListener('play', () => {
   firstInteraction.abort();
   updateBgmButton();
 });
@@ -403,7 +401,7 @@ function tryBgmOnInteraction(event) {
   if (bgm.paused) startBgm();
 }
 
-document.addEventListener('click', tryBgmOnInteraction, { signal: firstInteraction.signal });
+document.addEventListener('click', tryBgmOnInteraction, { capture: true, signal: firstInteraction.signal });
 document.addEventListener('keydown', tryBgmOnInteraction, { signal: firstInteraction.signal });
 
 bgmToggle.addEventListener('click', () => {
@@ -411,6 +409,8 @@ bgmToggle.addEventListener('click', () => {
   else {
     firstInteraction.abort();
     bgm.pause();
+    bgm.currentTime = 0;
+    updateBgmButton();
   }
 });
 
