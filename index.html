@@ -54,7 +54,7 @@
 <p>움직이는 바늘이 분홍 구간에 들어오는 순간 멈춰!</p>
 <label id="characterPicker">캐릭터 <select id="character"></select></label>
 <figure id="scene">
-<svg id="sample" viewBox="0 0 640 360" aria-hidden="true">
+<svg id="sample" hidden viewBox="0 0 640 360" aria-hidden="true">
 <circle cx="320" cy="180" r="123" fill="#fff5e8" opacity=".54"/>
 <path d="M112 223L335 174" stroke="#a66042" stroke-width="27" stroke-linecap="round"/>
 <path d="M164 211L335 174" stroke="#583038" stroke-width="29" stroke-linecap="round"/>
@@ -171,7 +171,7 @@ const secretHalfWidth = (perfectRight - perfectLeft) / 2;
 const secretRange = [secretCenter - secretHalfWidth, secretCenter + secretHalfWidth];
 const get = id => document.getElementById(id);
 const action = get('action');
-const art = get('art');
+let art = get('art');
 const sample = get('sample');
 const message = get('message');
 const verdict = { perfect:'퍼펙트', success:'성공', miss:'실패', hidden:'히든' };
@@ -200,10 +200,25 @@ function launchConfetti() {
   }
 }
 
-function showScene(next, zoom = 1) {
+let sceneRequest = 0;
+async function showScene(next, zoom = 1) {
+  const request = ++sceneRequest;
+  const src = characters.get(characterSelect.value).images[next];
+  let image = src && !art.hidden && art.getAttribute('src') === src ? art : null;
+  if (src && !image) {
+    const pending = new Image();
+    pending.id = 'art';
+    pending.src = src;
+    try {
+      await pending.decode();
+      image = pending;
+    } catch {
+      image = null;
+    }
+  }
+  if (request !== sceneRequest) return;
   get('scene').dataset.ending = next;
   get('confetti').replaceChildren();
-  const src = characters.get(characterSelect.value).images[next];
   get('failureStamp').hidden = next !== 'lose';
   const caption = get('caption');
   caption.hidden = next !== 'win' && next !== 'hidden';
@@ -214,31 +229,22 @@ function showScene(next, zoom = 1) {
     lose:'radial-gradient(ellipse,#fff5ef,#c4aaa8)',
     hidden:'radial-gradient(ellipse,#fff0fa,#be94cf)'
   }[next];
-  art.alt = scenes[next];
-  art.hidden = true;
-  sample.hidden = Boolean(src);
-  art.style.transform = sample.style.transform = 'scale(' + zoom + ')';
-  if (src) art.src = src;
-  else art.removeAttribute('src');
-  if (next === 'win' && !src) launchConfetti();
-  if (src && art.complete && art.naturalWidth) {
-    art.hidden = false;
+  if (image) {
+    image.alt = scenes[next];
+    image.style.transform = 'scale(' + zoom + ')';
+    if (image !== art) {
+      art.replaceWith(image);
+      art = image;
+    }
     sample.hidden = true;
-    if (next === 'win') launchConfetti();
+  } else {
+    art.hidden = true;
+    sample.style.transform = 'scale(' + zoom + ')';
+    sample.hidden = false;
   }
+  if (next === 'win') launchConfetti();
 }
 
-art.addEventListener('load', () => {
-  if (!art.naturalWidth || !art.hidden) return;
-  art.hidden = false;
-  sample.hidden = true;
-  if (get('scene').dataset.ending === 'win') launchConfetti();
-});
-art.addEventListener('error', () => {
-  art.hidden = true;
-  sample.hidden = false;
-  if (get('scene').dataset.ending === 'win') launchConfetti();
-});
 const isSuccess = result => result === 'success' || result === 'perfect';
 const inside = (value, [left, right]) => value >= left && value <= right;
 const secretOpen = () => round === 2 && results[0] === 'perfect' && results[1] === 'perfect';
