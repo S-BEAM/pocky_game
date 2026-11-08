@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>빼빼로 게임</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f8ecdf;color:#3e2427;font:16px/1.5 system-ui,sans-serif}main{max-width:650px;margin:auto;padding:28px 18px 40px}header{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;letter-spacing:.12em;border-bottom:1px solid #dcc6b9;padding-bottom:12px}h1{font-size:clamp(36px,8vw,56px);margin:12px 0 0;letter-spacing:-.07em}p{margin:4px 0 16px}figure{margin:0;position:relative;overflow:hidden;border-radius:22px;aspect-ratio:16/9;background:radial-gradient(ellipse at center,#fff4ea,#e5a9a3);display:grid;place-items:center}figure img,figure svg{position:absolute;width:100%;height:100%;object-fit:cover;transition:transform .45s ease}figure figcaption{position:absolute;bottom:12px;left:12px;background:#fff8ef;color:#533237;border-radius:30px;padding:5px 12px;font-size:12px;font-weight:750}.panel{margin-top:14px;padding:18px;background:#fff9f1;border:1px solid #e8d5ca;border-radius:20px}.rounds{display:flex;gap:8px;margin-bottom:15px}.rounds span{flex:1;background:#f3e4db;text-align:center;padding:6px;border-radius:8px;font-size:13px}.rounds .current{outline:2px solid #a24c59}.bar{position:relative;height:22px;background:#e9d8cb;border-radius:6px;margin:12px 0}.zone{position:absolute;top:0;height:100%;border-radius:4px}.success{background:#e58b9b}.perfect{background:#a52d54}.hidden-zone{background:#8455ad}.marker{position:absolute;top:-5px;width:5px;height:32px;border-radius:4px;background:#3e2427;box-shadow:0 0 0 2px #fff9f1;transform:translateX(-50%)}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px}.legend span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--color);margin-right:5px}button{width:100%;border:0;border-radius:10px;background:#7d3043;color:white;font:inherit;font-weight:800;padding:12px;cursor:pointer}button:focus-visible,summary:focus-visible{outline:3px solid #8455ad;outline-offset:3px}#message{min-height:24px;margin:12px 0;font-weight:650}details{margin-top:16px;font-size:13px}summary{cursor:pointer}label{display:grid;grid-template-columns:84px 1fr;gap:8px;align-items:center;margin:8px 0}input{width:100%}[hidden]{display:none!important}@media(prefers-reduced-motion:reduce){figure img,figure svg{transition:none}}
+#failureStamp{position:absolute;inset:0;z-index:1;display:grid;place-items:center;pointer-events:none}
+#failureStamp svg{position:static;width:min(70%,340px);height:auto;filter:drop-shadow(0 9px 0 #35152265);animation:failure-drop .65s both;transition:none}
+@keyframes failure-drop{
+  0%{transform:translateY(-150%) rotate(-18deg)}
+  56%{transform:translateY(8%) rotate(-7deg) scale(1.07,.91)}
+  74%{transform:translateY(-7%) rotate(-11deg) scale(.98,1.03)}
+  100%{transform:translateY(0) rotate(-9deg)}
+}
+@media(prefers-reduced-motion:reduce){#failureStamp svg{animation:none;transform:rotate(-9deg)}}
+#confetti{position:absolute;inset:0;z-index:1;pointer-events:none}
+#caption{z-index:2}
+#confetti i{position:absolute;left:var(--origin);top:42%;width:var(--size);height:calc(var(--size)*1.45);background:var(--color);border-radius:2px;animation:confetti-fall var(--duration) both}
+@keyframes confetti-fall{
+  0%{opacity:0;transform:scale(.2)}
+  8%{opacity:1}
+  33%{transform:translate(var(--x),var(--y)) rotate(var(--spin))}
+  72%{opacity:1}
+  100%{opacity:0;transform:translate(calc(var(--x)*1.35),160px) rotate(calc(var(--spin)*2))}
+}
+#scene[data-ending="hidden"] :is(#art,#sample):not([hidden]){animation:heartbeat .95s ease-in-out both}
+@keyframes heartbeat{
+  0%,38%,100%{transform:scale(1)}
+  17%{transform:scale(1.075)}
+  57%{transform:scale(1.05)}
+}
+@media(prefers-reduced-motion:reduce){
+  #confetti{display:none}
+  #scene[data-ending="hidden"] :is(#art,#sample):not([hidden]){animation:none}
+}
+#characterPicker{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-weight:750}
+#character{min-width:0;flex:1;background:#fff9f1;color:inherit;font:inherit;border:1px solid #dcc6b9;border-radius:9px;padding:8px 10px}
+
+@media(prefers-reduced-motion:no-preference){
+  header,h1,#characterPicker{animation:arrive .45s ease-out both}
+  h1{animation-delay:.07s}
+  #characterPicker{animation-delay:.13s}
+  #action{transition:background .16s,transform .16s,box-shadow .16s}
+  #action:hover{background:#913b51;box-shadow:0 5px 12px #7d304333}
+  #action:active{transform:scale(.98)}
+  #caption{animation:arrive .4s ease-out both}
+}
+@keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<main>
+<header><span>11.11 · 타이밍 미니게임</span><span>총 3라운드</span></header>
+<h1>빼빼로 게임</h1>
+<p>움직이는 바늘이 분홍 구간에 들어오는 순간 멈춰!</p>
+<label id="characterPicker">캐릭터 <select id="character"></select></label>
+<figure id="scene">
+<svg id="sample" viewBox="0 0 640 360" aria-hidden="true">
+<circle cx="320" cy="180" r="123" fill="#fff5e8" opacity=".54"/>
+<path d="M112 223L335 174" stroke="#a66042" stroke-width="27" stroke-linecap="round"/>
+<path d="M164 211L335 174" stroke="#583038" stroke-width="29" stroke-linecap="round"/>
+<path d="M528 223L363 180" stroke="#a66042" stroke-width="27" stroke-linecap="round"/>
+<path d="M476 209L363 180" stroke="#583038" stroke-width="29" stroke-linecap="round"/>
+<path d="M320 117C287 95 314 68 320 88C334 68 356 96 320 117Z" fill="#a52d54"/>
+</svg>
+<img id="art" alt="" hidden>
+<div id="failureStamp" hidden aria-hidden="true">
+<svg viewBox="0 0 360 200">
+<path d="M25 54l21 13-26-2zm298 17 21-17-11 24zm-290 76 24-10-14 22zm287-9 25 10-24 3z" fill="#ffd8c1"/>
+<path d="M56 41 306 29 326 150 61 172 39 103Z" fill="#401e30" stroke="#ffe3cb" stroke-width="5" stroke-linejoin="round"/>
+<path d="M65 55 292 44 309 137 71 156 54 104Z" fill="#9d304f" stroke="#f99a9a" stroke-width="2" stroke-dasharray="5 5"/>
+<text x="180" y="131" text-anchor="middle" font-size="91" font-weight="1000" letter-spacing="-5" fill="#fff2dc" stroke="#401e30" stroke-width="9" paint-order="stroke">실패</text>
+</svg>
+</div>
+<div id="confetti" aria-hidden="true"></div>
+<figcaption id="caption" hidden></figcaption>
+</figure>
+<section class="panel" aria-label="게임 조작">
+<div class="rounds" id="rounds"></div>
+<div class="bar" id="bar" aria-label="타이밍 게이지">
+<div class="zone success" id="success"></div><div class="zone perfect" id="perfect"></div><div class="zone hidden-zone" id="secret" hidden></div><div class="marker" id="marker"></div>
+</div>
+<div class="legend"><span style="--color:#e58b9b">성공</span><span style="--color:#a52d54">퍼펙트</span><span id="secretLegend" style="--color:#8455ad" hidden>히든</span></div>
+<p id="message" role="status"></p>
+<button id="action" type="button"></button>
+</section>
+</main>
+<script>
+// 각 캐릭터의 두 번째 칸에 게임 중, 성공, 히든 이미지 주소를 입력하세요.
+ // 세 번째 칸에는 실패, 성공, 히든 대사를 순서대로 입력하세요.
+const roster = {
+  "저지먼트 · 센터장": [
+    ['헤일로', ['', '', ''], ["괜찮네, 다시 하면 되니까.", "고생했군.", "자네, 방금... 아무것도 아닐세."]],
+  ],
+  "저지먼트 · 알파팀": [
+    ['데미안', ['', '', ''], ["아직 많이 있어.", "...벌써 끝났나?", "...이리 와. 빼빼로 없이, 한 번 더해."]],
+    ['테오', ['', '', ''], ["괜찮아요! 맛있어서 더 먹고 싶었어요!", "맛있었다! 하나 더 먹으면 안 돼요?", "...바, 바... 바바바... 방금...!"]],
+    ['바스티안', ['', '', ''], ["이런, 제가 실수했나 봅니다.", "고생하셨습니다.", "...실수입니까?"]],
+    ['로넌', ['', '', ''], ["죄, 죄송합니다. 제가 실수했습니다...", "딸기맛... 맛있었습니다.", "잠... 잠깐만요. 한 번만 더... 아니, 아무것도 아닙니다."]],
+    ['노아', ['', '', ''], ["아~ 하나 더 먹고 싶으면 그냥 드시면 될 텐데.", "맛있네요. 혹시 레몬맛은 없어요?", "헤에~ 노린 거죠?"]],
+    ['잭스', ['', '', ''], ["더럽게 못하네. 딴 새끼 알아봐.", "끝났지, 간다.", "...씨발, 방금..."]],
+    ['팽', ['', '', ''], ["괜찮습니다. 제가 잡을 테니 다시 해보시죠.", "이렇게 하는 게 맞습니까? 다행이군요.", "쿠... 쿨럭, 쿨럭쿨럭... 괜찮으십니까?! 제, 제가 닿았습니까?"]],
+    ['아이작', ['', '', ''], ["다시 할 생각은 아니죠? 당분 과다 섭취하지 마십시오.", "성공했으니 갑니다.", "......뭐, 뭡니까?! 이래서 안 하려고 했던 건데!"]],
+  ],
+  "저지먼트 · 브라보팀": [
+    ['키스', ['', '', ''], ["벌써 포기?", "응, 맛있었어!", "아하하하! 뭐야? 너, 이거 하고 싶었구나? 이리 와. 당당하게 하라구."]],
+    ['바이트', ['', '', ''], ["앗! 혹시 제 이빨 때문에 부러진검까?!", "성공임까?! 맛있었슴다!", "안다치셨슴까?! 안 다치셨으면... 혹시... 아, 아무것도 아님다!"]],
+    ['헤이즈', ['', '', ''], ['', '', '']],
+    ['유닛', ['', '', ''], ['', '', '']],
+    ['펜리르', ['', '', ''], ["괜찮습니다. 니나 간식이긴 하지만... 여유분을 가지고 있습니다.", "이 정도면 성공이군요. 남은 건 니나 몫으로 챙겨도 되겠습니까?", "...괜찮으십니까? 제가 먼저 물러났어야 했는데."]],
+    ['녹턴', ['', '', ''], ["...끝났습니까.", "고생하셨습니다.", ".........!"]],
+    ['스태틱', ['', '', ''], ["타이밍을 놓쳤습니다. 다시 하신다면 이번엔 제가 맞추겠습니다.", "성공입니까. 그럼 이만 복귀하겠습니다.", "...일부러 그랬심니꺼?"]],
+  ],
+  "제네시스": [
+    ['압그룬트', ['', '', ''], ["용서는 한 번뿐이네.", "제법이군. 자네가 먼저 물러날 줄 알았는데.", "물러서지 않았군..."]],
+  ],
+  "제네시스 · 줄루팀": [
+    ['톡신', ['', '', ''], ["뭐야, 더 가까이 오기 무섭냐?", "아슬아슬하네~ 푸흐흐흐...", "...야. 입 벌려봐. 독 안 들어갔냐?"]],
+    ['어비스', ['', '', ''], ["일부러 실패하셨습니까. 흥미로운 결과군요.", "이 정도 길이면 성공으로 쳐주는 겁니까? 좋은 결과를 얻었습니다.", "동공 확장, 심박수 증가, 체온 상승. ...당신에 대해서 적은 게 아닙니다."]],
+    ['캐스크', ['', '', ''], ["아! 안 돼 안 돼, 컨티뉴 버튼 어딨어?! 3초 안에 눌러야 한다고!!", "역시! 내가 고른 파티원 답네!", "뭐, 뭐야 이거? 디버프?! 아니, 버프인가?!"]],
+    ['슬릿', ['', '', ''], ["...바보야. 내가 갈테니까 가만히 있어.", "거봐, 이제 됐지?", "너, 너... 이거 실수야...?"]],
+    ['아네모네', ['', '', ''], ["괜찮아요. 한 개 더 먹고 싶던 참이었는걸요.", "맛있었어요... 감사합니다.", "아...! 죄, 죄송..."]],
+    ['트리거', ['', '', ''], ["죄송해요...! 저 때문에 실패한 거죠? 역시 다른 분들이랑 하시는 게...", "됐냐? 입만 달아졌네, 쯧.", "...푸흐흐. 고개라도 꺾어 드릴 걸 그랬나요?"]],
+  ],
+  "제네시스 · 양키팀": [
+    ['라엘', ['', '', ''], ["그 정도면 됐습니다. 다시 할 이유도 없고요.", "...생각보다 끈질기시군요.", "방금 건 잊으십시오. ...왜 웃으십니까."]],
+    ['바엘', ['', '', ''], ["부러졌네. 남은 건 네가 먹어.", "잘했어.", "......재밌네."]],
+  ],
+};
+const characters = new Map();
+const characterSelect = document.getElementById('character');
+for (const [group, entries] of Object.entries(roster)) {
+  const options = document.createElement('optgroup');
+  options.label = group;
+  for (const [name, [play, win, hidden], [loseLine, winLine, hiddenLine]] of entries) {
+    characters.set(name, {
+      images: { play, lose: play, win, hidden },
+      dialogue: {
+        lose: loseLine || '실패 대사',
+        win: winLine || '성공 대사',
+        hidden: hiddenLine || '히든 대사'
+      }
+    });
+    options.append(new Option(name, name));
+  }
+  characterSelect.append(options);
+}
+const scenes = {
+  play: '빼빼로를 물고 대기 중', win: '성공 엔딩',
+  lose: '실패 엔딩', hidden: '히든 엔딩 · 뽀뽀 후 부끄러움'
+};
+const targets = [
+  { success: [55, 80], perfect: [64, 70], duration: 1450 },
+  { success: [34, 55], perfect: [42, 47], duration: 1180 },
+  { success: [64, 83], perfect: [71, 75], duration: 950 }
+];
+const secretCenter = 20;
+const [perfectLeft, perfectRight] = targets[2].perfect;
+const secretHalfWidth = (perfectRight - perfectLeft) / 2;
+const secretRange = [secretCenter - secretHalfWidth, secretCenter + secretHalfWidth];
+const get = id => document.getElementById(id);
+const action = get('action');
+const art = get('art');
+const sample = get('sample');
+const message = get('message');
+const verdict = { perfect:'퍼펙트', success:'성공', miss:'실패', hidden:'히든' };
+let round = 0;
+let results = [];
+let phase = 'ready';
+let position = 0;
+let animation;
+let startTime;
+
+function launchConfetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#ff7198', '#ffe078', '#fff1df', '#a373dc', '#55c9b4'];
+  const confetti = get('confetti');
+  for (let index = 0; index < 42; index++) {
+    const piece = document.createElement('i');
+    piece.style.setProperty('--origin', index % 2 === 0 ? '32%' : '68%');
+    piece.style.setProperty('--x', (Math.random() - .5) * 270 + 'px');
+    piece.style.setProperty('--y', -35 - Math.random() * 125 + 'px');
+    piece.style.setProperty('--spin', (Math.random() - .5) * 640 + 'deg');
+    piece.style.setProperty('--size', 4 + Math.random() * 5 + 'px');
+    piece.style.setProperty('--duration', 1150 + Math.random() * 650 + 'ms');
+    piece.style.setProperty('--color', colors[index % colors.length]);
+    piece.addEventListener('animationend', () => piece.remove(), { once: true });
+    confetti.append(piece);
+  }
+}
+
+function showScene(next, zoom = 1) {
+  get('scene').dataset.ending = next;
+  get('confetti').replaceChildren();
+  const src = characters.get(characterSelect.value).images[next];
+  get('failureStamp').hidden = next !== 'lose';
+  const caption = get('caption');
+  caption.hidden = next !== 'win' && next !== 'hidden';
+  caption.textContent = next === 'hidden' ? '앗, 입술이 닿아버렸다!' : '처음 두 번, 완벽한 타이밍을 맞추면…?';
+  get('scene').style.background = {
+    play:'radial-gradient(ellipse,#fff4ea,#e5a9a3)',
+    win:'radial-gradient(ellipse,#fff4e1,#e99ba7)',
+    lose:'radial-gradient(ellipse,#fff5ef,#c4aaa8)',
+    hidden:'radial-gradient(ellipse,#fff0fa,#be94cf)'
+  }[next];
+  art.alt = scenes[next];
+  art.hidden = true;
+  sample.hidden = true;
+  sample.style.display = '';
+  sample.hidden = false;
+  art.style.transform = sample.style.transform = 'scale(' + zoom + ')';
+  if (src) art.src = src;
+  else art.removeAttribute('src');
+  if (next === 'win' && !src) launchConfetti();
+  if (src && art.complete && art.naturalWidth) {
+    art.hidden = false;
+    sample.hidden = true;
+    if (next === 'win') launchConfetti();
+  }
+}
+
+art.addEventListener('load', () => {
+  if (!art.naturalWidth || !art.hidden) return;
+  art.hidden = false;
+  sample.hidden = true;
+  if (get('scene').dataset.ending === 'win') launchConfetti();
+});
+art.addEventListener('error', () => {
+  art.hidden = true;
+  sample.hidden = false;
+  if (get('scene').dataset.ending === 'win') launchConfetti();
+});
+const isSuccess = result => result === 'success' || result === 'perfect';
+const inside = (value, [left, right]) => value >= left && value <= right;
+const secretOpen = () => round === 2 && results[0] === 'perfect' && results[1] === 'perfect';
+function setZone(id, [left, right]) {
+  get(id).style.left = left + '%';
+  get(id).style.width = right - left + '%';
+}
+function drawRounds() {
+  get('rounds').replaceChildren(...targets.map((_, index) => {
+    const chip = document.createElement('span');
+    chip.textContent = (index + 1) + 'R' + (results[index] ? ' · ' + verdict[results[index]] : '');
+    chip.classList.toggle('current', index === round && phase !== 'ended');
+    return chip;
+  }));
+}
+function animateFeedback(element, frames, duration) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  element.getAnimations().forEach(animation => animation.cancel());
+  element.animate(frames, { duration, easing: 'ease-out' });
+}
+
+function prepare() {
+  phase = 'ready';
+  position = 0;
+  get('marker').style.left = '0%';
+  const target = targets[round];
+  setZone('success', target.success);
+  setZone('perfect', target.perfect);
+  setZone('secret', secretRange);
+  get('secret').hidden = get('secretLegend').hidden = !secretOpen();
+  showScene('play', 1 + round * .13);
+  drawRounds();
+  message.textContent = secretOpen() ? '마지막 라운드에 히든 구간이 열렸어!' : (round + 1) + '라운드 준비';
+  action.textContent = '시작하기';
+  animateFeedback(get('rounds').querySelector('.current'), [
+    { transform: 'translateY(5px)', opacity: .5 },
+    { transform: 'translateY(0)', opacity: 1 }
+  ], 300);
+  if (secretOpen()) animateFeedback(get('secret'), [
+    { opacity: .35, boxShadow: '0 0 0 0 #8455ad80' },
+    { opacity: 1, boxShadow: '0 0 0 7px #8455ad00' }
+  ], 520);
+}
+function move(now) {
+  const progress = ((now - startTime) / targets[round].duration) % 2;
+  position = 100 * (progress <= 1 ? progress : 2 - progress);
+  get('marker').style.left = position + '%';
+  animation = requestAnimationFrame(move);
+}
+function stop() {
+  cancelAnimationFrame(animation);
+  const target = targets[round];
+  let result = 'miss';
+  if (secretOpen() && inside(position, secretRange)) result = 'hidden';
+  else if (inside(position, target.perfect)) result = 'perfect';
+  else if (inside(position, target.success)) result = 'success';
+  results.push(result);
+  const flash = {
+    miss: '#b56a68', success: '#e58b9b', perfect: '#e4ae48', hidden: '#8455ad'
+  }[result];
+  animateFeedback(get('marker'), [
+    { boxShadow: '0 0 0 2px #fff9f1' },
+    { boxShadow: '0 0 0 7px ' + flash },
+    { boxShadow: '0 0 0 2px #fff9f1' }
+  ], 330);
+  animateFeedback(message, [
+    { opacity: .5, transform: 'translateY(5px)' },
+    { opacity: 1, transform: 'translateY(0)' }
+  ], 280);
+  if (round === 2) {
+    phase = 'ended';
+    const total = results.filter(isSuccess).length;
+    const ending = result === 'hidden' ? 'hidden' : total >= 2 ? 'win' : 'lose';
+    showScene(ending);
+    message.textContent = characters.get(characterSelect.value).dialogue[ending];
+    action.textContent = '다시 하기';
+  } else {
+    phase = 'stopped';
+    message.textContent = verdict[result] + '!';
+    action.textContent = '다음 라운드';
+  }
+  drawRounds();
+  animateFeedback(get('rounds').children[round], [
+    { transform: 'translateY(0)' },
+    { transform: result === 'miss' ? 'translateY(6px)' : 'translateY(-7px)', offset: .38 },
+    { transform: 'translateY(0)' }
+  ], 360);
+}
+let stoppedOnPointerDown = false;
+action.addEventListener('pointerdown', event => {
+  if (!event.isPrimary || event.button !== 0) return;
+  stoppedOnPointerDown = phase === 'running';
+  if (stoppedOnPointerDown) stop();
+});
+action.addEventListener('click', event => {
+  // A pointer release after stopping must not advance or restart the game.
+  if (event.detail > 0 && stoppedOnPointerDown) {
+    stoppedOnPointerDown = false;
+    return;
+  }
+  if (phase === 'ready') {
+    phase = 'running';
+    message.textContent = '지금이다 싶은 순간에 멈춰!';
+    action.textContent = '멈추기';
+    startTime = performance.now();
+    animation = requestAnimationFrame(move);
+  } else if (phase === 'running') stop();
+  else if (phase === 'stopped') {
+    round++;
+    prepare();
+  } else {
+    round = 0;
+    results = [];
+    prepare();
+  }
+});
+document.addEventListener('keydown', event => {
+  if (event.code !== 'Space' || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.target !== action && event.target.closest('select, input, summary, button, textarea, [contenteditable]')) return;
+  event.preventDefault();
+  if (!event.repeat) action.click();
+});
+characterSelect.addEventListener('change', () => {
+  cancelAnimationFrame(animation);
+  round = 0;
+  results = [];
+  prepare();
+});
+prepare();
+</script>
+</html>
