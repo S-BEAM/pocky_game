@@ -47,6 +47,22 @@
   #caption{animation:arrive .4s ease-out both}
 }
 @keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+#dialogueBubble{position:absolute;z-index:3;top:8%;left:50%;transform:translateX(-50%);width:max-content;max-width:86%;padding:.55em .9em;border:1px solid #e1b7ae;border-radius:15px;background:#fffaf3;color:#3e2427;box-shadow:0 4px 12px #3e242733;font-size:clamp(12px,3vw,16px);font-weight:700;overflow-wrap:anywhere}
+#dialogueBubble::after{content:"";position:absolute;top:100%;left:50%;width:10px;height:10px;background:inherit;border-right:1px solid #e1b7ae;border-bottom:1px solid #e1b7ae;transform:translate(-50%,-5px) rotate(45deg)}
+#kissStamp{display:none;position:absolute;inset:0;z-index:2;place-items:center;pointer-events:none;font-size:clamp(64px,20vw,142px);line-height:1}
+#scene[data-ending="hidden"] #kissStamp{display:grid}
+#kissStamp span{animation:kiss-stamp 1.15s ease-out both;filter:drop-shadow(0 4px 5px #74213955)}
+@keyframes kiss-stamp{
+  0%{opacity:0;transform:scale(1.9) rotate(-19deg)}
+  10%{opacity:1}
+  18%{transform:scale(1.06,.79) rotate(-12deg)}
+  34%{transform:scale(.95) rotate(-12deg)}
+  65%{opacity:1}
+  100%{opacity:0;transform:scale(.95) rotate(-12deg)}
+}
+@media(prefers-reduced-motion:reduce){#kissStamp span{animation-name:kiss-fade}}
+@keyframes kiss-fade{0%,65%{opacity:1}100%{opacity:0}}
 </style>
 <main>
 <header><span>11.11 · 타이밍 미니게임</span><span>총 3라운드</span></header>
@@ -72,6 +88,8 @@
 </svg>
 </div>
 <div id="confetti" aria-hidden="true"></div>
+<div id="kissStamp" aria-hidden="true"><span>💋</span></div>
+<div id="dialogueBubble" role="status" hidden></div>
 <figcaption id="caption" hidden></figcaption>
 </figure>
 <section class="panel" aria-label="게임 조작">
@@ -220,6 +238,9 @@ async function showScene(next, zoom = 1) {
   }
   if (request !== sceneRequest) return;
   get('scene').dataset.ending = next;
+  const bubble = get('dialogueBubble');
+  bubble.hidden = next === 'play';
+  bubble.textContent = characters.get(characterSelect.value).dialogue[next] ?? '';
   get('confetti').replaceChildren();
   get('failureStamp').hidden = next !== 'lose';
   const caption = get('caption');
@@ -325,7 +346,7 @@ function stop() {
     const total = results.filter(isSuccess).length;
     const ending = result === 'hidden' ? 'hidden' : total >= 2 ? 'win' : 'lose';
     showScene(ending);
-    message.textContent = characters.get(characterSelect.value).dialogue[ending];
+    message.textContent = '';
     action.textContent = '다시 하기';
   } else {
     phase = 'stopped';
