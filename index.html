@@ -72,9 +72,27 @@
 .dialogue-slot{padding-left:64px;margin-bottom:14px}
 #dialogueBubble{margin:0 auto;width:100%;max-width:100%;height:5.8rem;display:grid;align-items:center;font-size:clamp(15px,3vw,19px);text-align:center}
 #dialogueText{max-height:100%;overflow:auto;min-height:0}
+body{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2256%22%20height%3D%2256%22%20viewBox%3D%220%200%2056%2056%22%3E%3Cdefs%3E%3Cg%20id%3D%22p%22%20transform%3D%22rotate%2833%29%22%3E%3Crect%20x%3D%22-2.3%22%20y%3D%22-9%22%20width%3D%224.6%22%20height%3D%2218%22%20rx%3D%222.2%22%20fill%3D%22%23ddb9a0%22%2F%3E%3Crect%20x%3D%22-2.3%22%20y%3D%22-9%22%20width%3D%224.6%22%20height%3D%2213%22%20rx%3D%222.2%22%20fill%3D%22%23caa095%22%2F%3E%3C%2Fg%3E%3Cpath%20id%3D%22h%22%20fill%3D%22%23dfa8af%22%20d%3D%22M0%206C-1%205-7%201-7-2c0-4%205-5%207-1%202-4%207-3%207%201C7%201%201%205%200%206Z%22%2F%3E%3C%2Fdefs%3E%3Cg%20opacity%3D%22.35%22%3E%3Cuse%20href%3D%22%23p%22%20x%3D%2214%22%20y%3D%2214%22%2F%3E%3Cuse%20href%3D%22%23h%22%20x%3D%2242%22%20y%3D%2214%22%2F%3E%3Cuse%20href%3D%22%23h%22%20x%3D%2214%22%20y%3D%2242%22%2F%3E%3Cuse%20href%3D%22%23p%22%20x%3D%2242%22%20y%3D%2242%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");background-repeat:repeat}
+
+.sound-controls{display:flex;align-items:center;gap:8px;white-space:nowrap}
+#bgm-toggle{width:auto;padding:4px;background:none;color:inherit;font:inherit;cursor:pointer}
+#bgm-toggle:hover{text-decoration:underline}
+#bgm-volume{width:clamp(48px,12vw,84px);margin:0;accent-color:#a24c59}
+#cursorHearts{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:10}
+.cursor-heart{position:absolute;color:#d2738e;font-size:var(--size);line-height:1;animation:cursor-heart-fall .9s ease-out both}
+@keyframes cursor-heart-fall{
+  0%{opacity:.8;transform:translate(-50%,-50%) scale(.65)}
+  25%{opacity:.72}
+  100%{opacity:0;transform:translate(calc(-50% + var(--drift)),54px) rotate(24deg) scale(.85)}
+}
+@media(prefers-reduced-motion:reduce){#cursorHearts{display:none}}
 </style>
 <main>
-<header><span>11.11 · 타이밍 미니게임</span><span>총 3라운드</span></header>
+<header><span>11.11 · 타이밍 미니게임</span><div class="sound-controls">
+  <button id="bgm-toggle" type="button">재생</button>
+  <input id="bgm-volume" type="range" min="0" max="100" value="30" aria-label="브금 볼륨">
+</div></header>
+<p id="bgm-status" role="status" hidden style="text-align:right;font-size:.8rem;"></p>
 <h1>빼빼로 게임</h1>
 <p>움직이는 바늘이 분홍 구간에 들어오는 순간 멈춰!</p>
 <div class="dialogue-slot"><div id="dialogueBubble"><div id="dialogueText" role="status">...</div></div></div>
@@ -114,21 +132,11 @@
 </section>
 </div>
 </div>
-<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px;justify-content:flex-end;">
-  <button id="bgm-toggle" type="button" style="width:auto;">▶ 재생</button>
-
-  <label style="display:flex;align-items:center;gap:8px;margin:0;">
-    볼륨
-    <input id="bgm-volume" type="range" min="0" max="100" value="30"
-           style="width:110px;">
-  </label>
-</div>
-
-<p id="bgm-status" role="status" hidden style="text-align:right;font-size:.8rem;"></p>
 <audio id="bite-sound" src="https://img.baat9.com/EVENT/11_11/yam.wav" preload="auto"></audio>
 <audio id="bgm" src="https://img.baat9.com/EVENT/11_11/cute.mp3" loop preload="auto"></audio>
 <footer style="margin-top:24px;text-align:center;font-size:.8rem;">BGM Restaurant - <a href="https://youtube.com/shorts/Zy-_aq5sIDM" target="_blank" rel="noopener noreferrer">https://youtube.com/shorts/Zy-_aq5sIDM</a></footer>
 </main>
+<div id="cursorHearts" aria-hidden="true"></div>
 <script>
 // 각 캐릭터의 두 번째 칸에 게임 중, 성공, 히든 이미지 주소를 입력하세요.
  // 세 번째 칸에는 실패, 성공, 히든 대사를 순서대로 입력하세요.
@@ -452,7 +460,7 @@ const firstInteraction = new AbortController();
 const bgmStatus = get('bgm-status');
 
 function updateBgmButton() {
-  bgmToggle.textContent = bgm.paused ? '▶ 재생' : '■ 정지';
+  bgmToggle.textContent = bgm.paused ? '재생' : '정지';
 }
 
 function startBgm() {
@@ -494,5 +502,42 @@ bgmToggle.addEventListener('click', () => {
 });
 
 startBgm();
+
+const cursorHearts = get('cursorHearts');
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let heartTimer;
+let cursorX;
+let cursorY;
+
+function dropCursorHeart() {
+  const heart = document.createElement('span');
+  heart.className = 'cursor-heart';
+  heart.textContent = '♥';
+  heart.style.left = cursorX + 9 + 'px';
+  heart.style.top = cursorY + 11 + 'px';
+  heart.style.setProperty('--size', 9 + Math.random() * 7 + 'px');
+  heart.style.setProperty('--drift', (Math.random() - .5) * 32 + 'px');
+  heart.addEventListener('animationend', () => heart.remove(), { once: true });
+  cursorHearts.append(heart);
+}
+
+function stopCursorHearts() {
+  clearInterval(heartTimer);
+  heartTimer = undefined;
+  cursorHearts.replaceChildren();
+}
+
+document.addEventListener('pointermove', event => {
+  if (event.pointerType !== 'mouse' || reducedMotion.matches || document.hidden) return;
+  cursorX = event.clientX;
+  cursorY = event.clientY;
+  if (heartTimer !== undefined) return;
+  dropCursorHeart();
+  heartTimer = setInterval(dropCursorHeart, 95);
+}, { passive: true });
+document.documentElement.addEventListener('pointerleave', stopCursorHearts);
+window.addEventListener('blur', stopCursorHearts);
+document.addEventListener('visibilitychange', stopCursorHearts);
+reducedMotion.addEventListener('change', stopCursorHearts);
 </script>
 </html>
