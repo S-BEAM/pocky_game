@@ -129,9 +129,8 @@ body{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fw
 <p id="message" role="status"></p>
 <button id="action" type="button"></button>
 <div id="saveArea" hidden style="margin-top:10px;text-align:center">
-<button id="saveImage" type="button" style="width:auto;padding:7px 14px">고해상도 이미지 저장</button>
-<a id="saveOriginal" target="_blank" rel="noopener noreferrer" hidden>원본 이미지 열기</a>
-<p id="saveStatus" role="status" style="font-size:12px;margin:5px 0 0"></p>
+<a id="saveImage" target="_blank" rel="noopener noreferrer" style="display:inline-block;border-radius:10px;background:#7d3043;color:white;font-weight:800;text-decoration:none;padding:7px 14px">고해상도 이미지 저장</a>
+<p style="font-size:12px;margin:5px 0 0">클릭하면 크롭되지 않은 이미지를 저장할 수 있습니다.</p>
 </div>
 </section>
 </div>
@@ -298,8 +297,7 @@ let endingImage = null;
 function prepare() {
   endingImage = null;
   get('saveArea').hidden = true;
-  get('saveOriginal').hidden = true;
-  get('saveStatus').textContent = '';
+  get('saveImage').removeAttribute('href');
   phase = 'ready';
   position = 0;
   get('marker').style.left = '0%';
@@ -361,6 +359,7 @@ function stop() {
       url: source.replace(/_([123])(?=\.png(?:[?#]|$))/, (_, digit) => '_' + digit + digit),
       name: selectedCharacter + '-' + ({ lose: '실패', win: '성공', hidden: '히든' }[ending]) + '.png'
     };
+    get('saveImage').href = endingImage.url;
     get('saveArea').hidden = false;
     message.textContent = '';
     action.textContent = '다시 하기';
@@ -445,35 +444,6 @@ for (const entries of iconGroups) {
   picker.append(group);
 }
 prepare();
-get('saveImage').addEventListener('click', async () => {
-  if (!endingImage) return;
-  const image = endingImage;
-  const button = get('saveImage');
-  button.disabled = true;
-  try {
-    const response = await fetch(image.url);
-    if (!response.ok) throw new Error('이미지 요청 실패');
-    const blob = await response.blob();
-    if (!blob.type.startsWith('image/')) throw new Error('이미지 형식 확인 실패');
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = image.name;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } catch {
-    if (endingImage === image) {
-      const link = get('saveOriginal');
-      link.href = image.url;
-      link.hidden = false;
-      get('saveStatus').textContent = '원본 이미지를 열어 길게 누르거나 우클릭으로 저장해 주세요.';
-    }
-  } finally {
-    button.disabled = false;
-  }
-});
 const bgm = document.getElementById('bgm');
 const bgmToggle = document.getElementById('bgm-toggle');
 const bgmVolume = document.getElementById('bgm-volume');
